@@ -30,9 +30,12 @@ mybatis-plus:
     #在映射实体或者属性时，将数据库中表名和字段名中的下划线去掉，按照驼峰命名法映射
     #如address_book---->AddressBook
     map-underscore-to-camel-case: true
+    #开启mybatis日志
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
+      #设置主键生成策略
       id-type: ASSIGN_ID
 
-
+phoneSystem:
+  path: D:/id

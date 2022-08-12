@@ -37,15 +37,7 @@ public class TeacherController {
     @PostMapping
     public R<String> save(@RequestBody TeacherDto teacherDto){
         log.info("教师信息为：{}",teacherDto);
-        LambdaQueryWrapper<Academy> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(teacherDto.getDtoName()!=null,Academy::getName,teacherDto.getDtoName())
-                .eq(teacherDto.getSystem()!=null,Academy::getSystem,teacherDto.getSystem());
-        Academy academy = academyService.getOne(lqw);
-        Teacher teacher = new Teacher();
-
-        BeanUtils.copyProperties(teacherDto,teacher);
-        teacher.setAcademyId(academy.getId());
-        teacherService.save(teacher);
+        teacherService.saveTeacher(teacherDto);
         return R.success("新增教师成功");
     }
 
@@ -69,11 +61,22 @@ public class TeacherController {
      * @return
      */
     @GetMapping("{id}")
-    public R<Teacher> getById(@PathVariable Long id){
+    public R<TeacherDto> getById(@PathVariable Long id){
+        //查询教师
         LambdaQueryWrapper<Teacher> lqw = new LambdaQueryWrapper<>();
         lqw.eq(id!=null,Teacher::getId,id);
         Teacher teacher = teacherService.getOne(lqw);
-        return  R.success(teacher);
+        TeacherDto teacherDto = new TeacherDto();
+        //属性拷贝
+        BeanUtils.copyProperties(teacher,teacherDto);
+        //查询院系信息
+        LambdaQueryWrapper<Academy> lqw2 = new LambdaQueryWrapper<>();
+        lqw2.eq(teacher.getAcademyId()!=null,Academy::getId,teacher.getAcademyId());
+        Academy academy = academyService.getOne(lqw2);
+        //信息完善
+        teacherDto.setDtoName(academy.getName());
+        teacherDto.setSystem(academy.getSystem());
+        return  R.success(teacherDto);
     }
 
     /**
@@ -83,30 +86,32 @@ public class TeacherController {
      */
     @PutMapping("update")
     public R<String> update(@RequestBody TeacherDto teacherDto){
+        //先删除
+        teacherService.removeById(teacherDto.getId());
+        //添加
+        teacherService.saveTeacher(teacherDto);
 
-        return null;
+        return R.success("修改教师信息成功");
     }
 
 
     /**
-     * 教师信息分页查询
-     *
+     * 教师信息分页查询+模糊查询(学院+系)
      * @param page
      * @param pageSize
-     * @param name
+     * @param teacherDto
      * @return
      */
     @GetMapping("/page")
-    public R<Page> page(int page, int pageSize, String name) {
-        log.info("page={},pageSize={},name={}", page, pageSize, name);
+    public R<Page> page(int page, int pageSize, TeacherDto teacherDto) {
+        log.info("page={},pageSize={},name={}", page, pageSize, teacherDto.toString());
 
         //构造分页构造器
         Page pageInfo = new Page(page, pageSize);
 
         //构造条件构造器
         LambdaQueryWrapper<Teacher> lqw = new LambdaQueryWrapper<>();
-        //添加过滤条件
-        lqw.like(!StringUtils.isEmpty(name), Teacher::getName, name);
+
 
         //执行查询
         teacherService.page(pageInfo, lqw);
